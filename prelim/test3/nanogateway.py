@@ -48,7 +48,7 @@ TX_ACK_PK = {"txpk_ack":{"error":""}}
 
 
 class NanoGateway:
-
+    # Init with config params
     def __init__(self, id, frequency, datarate, ssid, password, server, port, ntp='pool.ntp.org', ntp_period=3600):
         self.id = id
         self.frequency = frequency
@@ -75,6 +75,7 @@ class NanoGateway:
         self.lora = None
         self.lora_sock = None
 
+    # Start the gateway
     def start(self):
         # Change WiFi to STA mode and connect
         self.wlan = WLAN(mode=WLAN.STA)
@@ -107,13 +108,10 @@ class NanoGateway:
         self.lora_sock = socket.socket(socket.AF_LORA, socket.SOCK_RAW)
         self.lora_sock.setblocking(False)
         self.lora_tx_done = False
-
+        # Set lora_cb as the callback for the LoRa channel
         self.lora.callback(trigger=(LoRa.RX_PACKET_EVENT | LoRa.TX_PACKET_EVENT), handler=self._lora_cb)
 
     def stop(self):
-        # TODO: Check how to stop the NTP sync
-        # TODO: Create a cancel method for the alarm
-        # TODO: kill the UDP thread
         self.sock.close()
 
     def _connect_to_wifi(self):
@@ -179,12 +177,15 @@ class NanoGateway:
             except Exception:
                 print("PULL RSP ACK exception")
 
+    # callback for the LoRa channel
     def _lora_cb(self, lora):
         events = lora.events()
         if events & LoRa.RX_PACKET_EVENT:
             self.rxnb += 1
             self.rxok += 1
+            # store the data received
             rx_data = self.lora_sock.recv(256)
+            # print the data received
             print('data : {}'.format(rx_data))
             stats = lora.stats()
             makeNodePacket = self._make_node_packet(rx_data, self.rtc.now(), stats.rx_timestamp, stats.sfrx, stats.rssi, stats.snr)
@@ -195,6 +196,7 @@ class NanoGateway:
             lora.init(mode=LoRa.LORA, frequency=self.frequency, bandwidth=LoRa.BW_125KHZ,
                      sf=self.sf, preamble=8, coding_rate=LoRa.CODING_4_5, tx_iq=True)
 
+    # send data through the LoRa channel
     def _send_down_link(self, data, tmst, datarate, frequency):
         self.lora.init(mode=LoRa.LORA, frequency=frequency, bandwidth=LoRa.BW_125KHZ,
                       sf=self._dr_to_sf(datarate), preamble=8, coding_rate=LoRa.CODING_4_5,
@@ -203,12 +205,15 @@ class NanoGateway:
             pass
         self.lora_sock.send(data)
 
+    # manage the response from the broker
     def _udp_thread(self):
         while True:
             try:
+                # receive data
                 data, src = self.sock.recvfrom(1024)
                 _token = data[1:3]
                 _type = data[3]
+                # filter by type
                 if _type == PUSH_ACK:
                     print("Push ack")
                 elif _type == PULL_ACK:
@@ -216,12 +221,14 @@ class NanoGateway:
                 elif _type == PULL_RESP:
                     self.dwnb += 1
                     ack_error = TX_ERR_NONE
+                    # slice to get only required data
                     tx_pk = json.loads(data[4:])
                     tmst = tx_pk["txpk"]["tmst"]
                     t_us = tmst - time.ticks_us() - 5000
                     if t_us < 0:
                         t_us += 0xFFFFFFFF
                     if t_us < 20000000:
+                        # send the packet through the LoRa channel
                         self.uplink_alarm = Timer.Alarm(handler=lambda x: self._send_down_link(binascii.a2b_base64(tx_pk["txpk"]["data"]),
                                                                                               tx_pk["txpk"]["tmst"] - 10, tx_pk["txpk"]["datr"],
                                                                                               int(tx_pk["txpk"]["freq"] * 1000000)), us=t_us)
