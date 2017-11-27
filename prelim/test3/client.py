@@ -1,4 +1,3 @@
-
 from network import LoRa
 import socket
 import binascii
@@ -9,11 +8,11 @@ import time
 lora = LoRa(mode=LoRa.LORAWAN)
 
 # Device ID, must match with the one provided to AS
-dev_eui = binascii.unhexlify('AA BB CC DD EE FF 77 78'.replace(' ',''))
+dev_eui = binascii.unhexlify('AA BB CC DD EE FF 77 78'.replace(' ', ''))
 # Application ID, must match with the AS
-app_eui = binascii.unhexlify('70 B3 D5 7E D0 00 7C 00'.replace(' ',''))
+app_eui = binascii.unhexlify('70 B3 D5 7E D0 00 7C 00'.replace(' ', ''))
 # Application key as created by the AS
-app_key = binascii.unhexlify('EB 1F C2 C9 99 A2 10 F3 FA 49 0A 16 B7 91 55 9F'.replace(' ',''))
+app_key = binascii.unhexlify('EB 1F C2 C9 99 A2 10 F3 FA 49 0A 16 B7 91 55 9F'.replace(' ', ''))
 
 # set the 3 default channels to the same frequency (must be before sending the OTAA join request)
 lora.add_channel(0, frequency=868100000, dr_min=0, dr_max=5)
