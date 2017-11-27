@@ -26,8 +26,12 @@ s.setblocking(True)
 while True:
     msg = s.recv(255)
 <<<<<<< HEAD
+<<<<<<< HEAD
     print("Received {}".format(msg))
 =======
     print("Received {:x}".format(msg))
 >>>>>>> adding gateway to v1
+=======
+    print("Received {}".format(to_hex(msg)))
+>>>>>>> Use this wonderful function
     time.sleep(0.01)

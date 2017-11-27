@@ -22,5 +22,5 @@ s.setblocking(True)
 
 while True:
     msg = s.recv(255)
-    print("Received {}".format(msg))
+    print("Received {}".format(to_hex(msg)))
     time.sleep(0.01)
